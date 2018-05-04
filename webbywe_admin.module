@@ -1,0 +1,183 @@
+<?php
+
+/**
+ * @file
+ * Primarily Drupal hooks and API functions.
+ *
+ * This is the main module file for Webbywe Admin Form.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function views_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#webbywe_form':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('An example of an admin Drupal form for content types.') . '</p>';
+
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<p>' . t('Navigate to <a href="/admin/webbywe">webbywe Admin Form</a> and select values for the fields and click submit.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function webbywe_admin_menu() {
+  $items['admin/webbywe'] = [
+    'title' => 'webbywe Admin Form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['webbywe_admin_form'],
+    'access arguments' => ['administer content'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+
+  // Create the dynamic menu paths that were saved.
+  $result = db_query("SELECT path FROM {webbywe_menus}")->fetchCol();
+
+  if ($result) {
+    foreach ($result as $path) {
+      $items[$path] = [
+        'title' => 'Content',
+        'page callback' => 'webbywe_admin_render_path',
+        'access arguments' => ['access content'],
+        'type' => MENU_CALLBACK,
+      ];
+    }
+  }
+
+  return $items;
+}
+
+/**
+ * Admin form to configurable welcome message
+ */
+function webbywe_admin_form($form, &$form_state) {
+  $form['#submit'][] = 'webbywe_admin_form_submit';
+
+  // Build the content types form field.
+  $form_types = [t('--- SELECT ---')];
+  $content_types = node_type_get_types();
+
+  foreach ($content_types as $row) {
+    $form_types[$row->type] = $row->name;
+  }
+
+  // Dynamic user entered path to display result to.
+  $form['path'] = [
+    '#title' => t('Path'),
+    '#type' => 'textfield',
+    '#description' => t('A path to display content to.'),
+    '#default_value' => 'test',
+    '#required' => TRUE,
+  ];
+
+  // Main content type field with AJAX callback to populate conditional field .
+  $form['type'] = [
+    '#title' => t('Content Types'),
+    '#type' => 'select',
+    '#description' => t('Select an available Content Type.'),
+    '#options' => $form_types,
+    '#ajax' => [
+      'wrapper' => 'conditional-wrapper',
+      'callback' => 'webbywe_admin_ajax_callback',
+      'method' => 'replace',
+    ],
+  ];
+
+  $form['conditional_wrapper'] = [
+    '#prefix' => '<div id="conditional-wrapper">',
+    '#suffix' => '</div>',
+  ];
+
+  // Get the nodes based on the content type.
+  $nodes = [];
+  if (isset($form_state['values']['type']) && ($type = $form_state['values']['type']) !== 0) {
+    $nodes = db_query("SELECT nid, title FROM {node} WHERE type = :type", [':type' => $type])->fetchAllKeyed();
+  }
+
+  $form['conditional_wrapper']['nodes'] = [
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#title' => t('nodes'),
+    '#options' => $nodes,
+    '#default_value' => $nodes,
+    '#required' => TRUE,
+    // Only show if Content Types is not set to default 'Select'.
+    '#states' => [
+      'visible' => [
+        ':input[name="type"]' => ['!value' => '0'],
+      ],
+    ],
+  ];
+
+  return system_settings_form($form);
+}
+
+/**
+ * AJAX callback for the form to replace nodes.
+ *
+ * @param $form
+ *   The form renderable array.
+ * @param $form_state
+ *   The form state with set values.
+ *
+ * @return mixed
+ */
+function webbywe_admin_ajax_callback($form, $form_state) {
+  return $form['conditional_wrapper'];
+}
+
+/**
+ * Implements hook_form_validate().
+ */
+function webbywe_admin_form_validate($form, &$form_state) {
+  $path = drupal_encode_path(check_plain($form_state['values']['path']));
+
+  if (drupal_valid_path($path)) {
+    form_set_error('path', t('Path is already used. Please enter a path that does not exist.'));
+  }
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function webbywe_admin_form_submit($form, &$form_state) {
+  $path = drupal_encode_path(check_plain($form_state['values']['path']));
+  $nodes = $form_state['values']['nodes'];
+
+  // Store the result in the custom database table.
+  try {
+    db_insert('webbywe_menus')
+      ->fields(['path', 'nids',])
+      ->values([
+        'path' => $path,
+        'nids' => serialize($nodes),
+      ])
+      ->execute();
+  } catch (Exception $e) {
+    watchdog_exception('type', $e);
+    drupal_set_message(t('Error: %message', ['%message' => $e->getMessage()]), 'error');
+    return;
+  }
+
+  // Rebuild the menu for the saved path to be added.
+  menu_rebuild();
+
+  // Redirect to the menu path since been added.
+  drupal_goto($path);
+}
+
+/**
+ * Function to render the nodes set for the particular path stored.
+ *
+ * @return array A rendered array of the teaser for all nodes.
+ */
+function webbywe_admin_render_path() {
+  $nids = db_query("SELECT nids FROM {webbywe_menus} WHERE path = :path", [':path' => current_path()])->fetchField();
+  $view = node_view_multiple(node_load_multiple(unserialize($nids)), 'teaser');
+
+  return $view;
+}

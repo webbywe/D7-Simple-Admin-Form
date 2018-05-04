@@ -1,0 +1,24 @@
+<?php
+
+function webbywe_admin_schema() {
+  $schema['webbywe_menus'] = [
+    'description' => 'Table to store nodes to path.',
+    'fields' => [
+      'path' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => t('field path of webbywe_menus.'),
+      ],
+      'nids' => [
+        'type' => 'blob',
+        'not null' => TRUE,
+        'description' => t('field nids of webbywe_menus.'),
+      ],
+    ],
+    'indexes' => [
+      'path' => ['path'],
+    ],
+  ];
+  return $schema;
+}

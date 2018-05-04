@@ -1,0 +1,5 @@
+name = webbywe Admin Form
+description = A simple admin form in a custom module for example.
+core = 7.x
+package = webbywe
+php = 5.4
