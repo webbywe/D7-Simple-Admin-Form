@@ -58,7 +58,7 @@ function webbywe_admin_form($form, &$form_state) {
   $form['#submit'][] = 'webbywe_admin_form_submit';
 
   // Build the content types form field.
-  $form_types = [t('--- SELECT ---')];
+  $form_types = [];
   $content_types = node_type_get_types();
 
   foreach ($content_types as $row) {
@@ -85,6 +85,7 @@ function webbywe_admin_form($form, &$form_state) {
       'callback' => 'webbywe_admin_ajax_callback',
       'method' => 'replace',
     ],
+    '#required' => TRUE,
   ];
 
   $form['conditional_wrapper'] = [
@@ -101,14 +102,13 @@ function webbywe_admin_form($form, &$form_state) {
   $form['conditional_wrapper']['nodes'] = [
     '#type' => 'select',
     '#multiple' => TRUE,
-    '#title' => t('nodes'),
+    '#title' => t('Nodes to assign to the path'),
     '#options' => $nodes,
     '#default_value' => $nodes,
-    '#required' => TRUE,
     // Only show if Content Types is not set to default 'Select'.
     '#states' => [
       'visible' => [
-        ':input[name="type"]' => ['!value' => '0'],
+        ':input[name="type"]' => ['!value' => ''],
       ],
     ],
   ];
@@ -135,6 +135,10 @@ function webbywe_admin_ajax_callback($form, $form_state) {
  */
 function webbywe_admin_form_validate($form, &$form_state) {
   $path = drupal_encode_path(check_plain($form_state['values']['path']));
+
+  if ($form_state['values']['type'] != '' && count($form_state['values']['nodes']) === 0) {
+    form_set_error('nodes', t('Please select nodes from the list to assign to the path.'));
+  }
 
   if (drupal_valid_path($path)) {
     form_set_error('path', t('Path is already used. Please enter a path that does not exist.'));
