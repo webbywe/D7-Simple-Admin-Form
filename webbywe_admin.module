@@ -183,8 +183,20 @@ function webbywe_admin_form_submit($form, &$form_state) {
  *   A rendered array of the teaser for all nodes.
  */
 function webbywe_admin_render_path() {
-  $nids = db_query("SELECT nids FROM {webbywe_menus} WHERE path = :path", [':path' => current_path()])->fetchField();
-  $view = node_view_multiple(node_load_multiple(unserialize($nids)), 'teaser');
+  $result = db_query("SELECT nids FROM {webbywe_menus} WHERE path = :path", [':path' => current_path()])->fetchField();
+
+  if (!$result) {
+    return drupal_not_found();
+  }
+
+  $nids = unserialize($result);
+
+  if (!count($nids)) {
+    $view = 'There is no content assigned to this path.';
+  }
+  else {
+    $view = node_view_multiple(node_load_multiple(), 'teaser');
+  }
 
   return $view;
 }
