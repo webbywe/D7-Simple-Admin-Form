@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * @file
+ * Primarily Drupal install functions.
+ */
+
+/**
+ * Implements hook_schema().
+ */
 function webbywe_admin_schema() {
   $schema['webbywe_menus'] = [
     'description' => 'Table to store nodes to path.',
@@ -8,12 +16,12 @@ function webbywe_admin_schema() {
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
-        'description' => t('field path of webbywe_menus.'),
+        'description' => 'field path of webbywe_menus.',
       ],
       'nids' => [
         'type' => 'blob',
         'not null' => TRUE,
-        'description' => t('field nids of webbywe_menus.'),
+        'description' => 'field nids of webbywe_menus.',
       ],
     ],
     'indexes' => [

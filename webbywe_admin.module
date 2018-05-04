@@ -52,7 +52,7 @@ function webbywe_admin_menu() {
 }
 
 /**
- * Admin form to configurable welcome message
+ * Admin form to configurable welcome message.
  */
 function webbywe_admin_form($form, &$form_state) {
   $form['#submit'][] = 'webbywe_admin_form_submit';
@@ -119,14 +119,15 @@ function webbywe_admin_form($form, &$form_state) {
 /**
  * AJAX callback for the form to replace nodes.
  *
- * @param $form
+ * @param array $form
  *   The form renderable array.
- * @param $form_state
+ * @param array $form_state
  *   The form state with set values.
  *
  * @return mixed
+ *   The rendered array for the select dropdown.
  */
-function webbywe_admin_ajax_callback($form, $form_state) {
+function webbywe_admin_ajax_callback(array $form, array $form_state) {
   return $form['conditional_wrapper'];
 }
 
@@ -155,13 +156,14 @@ function webbywe_admin_form_submit($form, &$form_state) {
   // Store the result in the custom database table.
   try {
     db_insert('webbywe_menus')
-      ->fields(['path', 'nids',])
+      ->fields(['path', 'nids'])
       ->values([
         'path' => $path,
         'nids' => serialize($nodes),
       ])
       ->execute();
-  } catch (Exception $e) {
+  }
+  catch (Exception $e) {
     watchdog_exception('type', $e);
     drupal_set_message(t('Error: %message', ['%message' => $e->getMessage()]), 'error');
     return;
@@ -177,7 +179,8 @@ function webbywe_admin_form_submit($form, &$form_state) {
 /**
  * Function to render the nodes set for the particular path stored.
  *
- * @return array A rendered array of the teaser for all nodes.
+ * @return array
+ *   A rendered array of the teaser for all nodes.
  */
 function webbywe_admin_render_path() {
   $nids = db_query("SELECT nids FROM {webbywe_menus} WHERE path = :path", [':path' => current_path()])->fetchField();

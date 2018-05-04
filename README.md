@@ -24,4 +24,4 @@ The node teasers assigned to the path will be shown.
 
 #### Validations 
 
-- The path will throw an error if it is an already a drupal defined path. 
+- The path will throw an error if it is an already a drupal defined path.
