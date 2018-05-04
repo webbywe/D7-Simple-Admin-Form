@@ -22,6 +22,6 @@ What Is This?
 Upon saving configuration, the user will be redirected to their entered path.
 The node teasers assigned to the path will be shown.
 
-####Validations 
+#### Validations 
 
 - The path will throw an error if it is an already a drupal defined path. 
