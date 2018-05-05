@@ -195,7 +195,7 @@ function webbywe_admin_render_path() {
     $view = 'There is no content assigned to this path.';
   }
   else {
-    $view = node_view_multiple(node_load_multiple(), 'teaser');
+    $view = node_view_multiple(node_load_multiple($nids), 'teaser');
   }
 
   return $view;
